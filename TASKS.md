@@ -2,9 +2,9 @@
 
 ## Foundation
 
-- [ ] Initialize Next.js application
-- [ ] Initialize Node.js backend
-- [ ] Establish project structure
+- [x] Initialize Next.js application
+- [x] Initialize Node.js backend
+- [x] Establish project structure
 
 ## Frontend
 

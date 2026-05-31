@@ -1,0 +1,15 @@
+{
+  "name": "focustube-zero-distraction",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @focustube/web",
+    "dev:api": "npm run dev --workspace @focustube/api",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

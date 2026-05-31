@@ -109,13 +109,29 @@ type TelemetryEvent = {
 
 ## Local Development
 
-Implementation commands will be finalized after the app scaffold is created.
-
-Expected direction:
+Install dependencies:
 
 ```bash
 npm install
-npm run dev
+```
+
+Run the frontend:
+
+```bash
+npm run dev:web
+```
+
+Run the backend:
+
+```bash
+npm run dev:api
+```
+
+Run validation commands:
+
+```bash
+npm run typecheck
+npm run build
 ```
 
 ## Deployment
