@@ -86,6 +86,10 @@ GET  /api/health
 Session payload shape:
 
 ```ts
+type CreateSessionRequest = {
+  videoId: string;
+};
+
 type VideoSession = {
   sessionId: string;
   videoId: string;
@@ -93,6 +97,10 @@ type VideoSession = {
   sourceUrl: string;
   createdAt: string;
   expiresAt: string;
+};
+
+type SessionResponse = {
+  session: VideoSession;
 };
 ```
 

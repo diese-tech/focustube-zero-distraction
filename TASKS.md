@@ -15,7 +15,7 @@
 
 ## Backend
 
-- [ ] Create session metadata API
+- [x] Create session metadata API
 - [ ] Create telemetry ingestion endpoint
 - [ ] Implement custom token bucket limiter
 - [ ] Add request validation
