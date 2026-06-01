@@ -21,12 +21,46 @@ export function useFocusGuard(
   visibilityThreshold = 0.9
 ) {
   const [pauseMessage, setPauseMessage] = useState<string | null>(null);
+  const [viewportRatio, setViewportRatio] = useState(1);
   const focusStateRef = useRef<FocusState>({
     documentVisible: true,
     windowFocused: true,
     viewportRatio: 1
   });
   const lastPauseReasonRef = useRef<FocusPauseReason | null>(null);
+
+  const updateViewportRatio = useCallback((ratio: number) => {
+    const nextRatio = Math.max(0, Math.min(1, ratio));
+
+    focusStateRef.current.viewportRatio = nextRatio;
+    setViewportRatio(nextRatio);
+  }, []);
+
+  const measureVideoViewportRatio = useCallback(() => {
+    const video = videoRef.current;
+
+    if (!video) {
+      return 0;
+    }
+
+    const rect = video.getBoundingClientRect();
+    const videoArea = rect.width * rect.height;
+
+    if (videoArea <= 0) {
+      return 0;
+    }
+
+    const visibleWidth = Math.max(
+      0,
+      Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0)
+    );
+    const visibleHeight = Math.max(
+      0,
+      Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0)
+    );
+
+    return (visibleWidth * visibleHeight) / videoArea;
+  }, [videoRef]);
 
   const getBlockingReason = useCallback((): FocusPauseReason | null => {
     const focusState = focusStateRef.current;
@@ -64,6 +98,15 @@ export function useFocusGuard(
     [videoRef]
   );
 
+  const checkViewportVisibility = useCallback(() => {
+    const ratio = measureVideoViewportRatio();
+    updateViewportRatio(ratio);
+
+    if (ratio < visibilityThreshold) {
+      pauseForReason("viewport_hidden");
+    }
+  }, [measureVideoViewportRatio, pauseForReason, updateViewportRatio, visibilityThreshold]);
+
   const enforceFocus = useCallback(() => {
     const reason = getBlockingReason();
 
@@ -73,6 +116,8 @@ export function useFocusGuard(
   }, [getBlockingReason, pauseForReason]);
 
   const handlePlaybackStarted = useCallback(() => {
+    checkViewportVisibility();
+
     const reason = getBlockingReason();
 
     if (reason) {
@@ -82,7 +127,7 @@ export function useFocusGuard(
 
     lastPauseReasonRef.current = null;
     setPauseMessage(null);
-  }, [getBlockingReason, pauseForReason]);
+  }, [checkViewportVisibility, getBlockingReason, pauseForReason]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -100,16 +145,24 @@ export function useFocusGuard(
       enforceFocus();
     };
 
+    const handleViewportChange = () => {
+      checkViewportVisibility();
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleWindowFocus);
     window.addEventListener("blur", handleWindowBlur);
+    window.addEventListener("scroll", handleViewportChange, { passive: true });
+    window.addEventListener("resize", handleViewportChange);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleWindowFocus);
       window.removeEventListener("blur", handleWindowBlur);
+      window.removeEventListener("scroll", handleViewportChange);
+      window.removeEventListener("resize", handleViewportChange);
     };
-  }, [enforceFocus]);
+  }, [checkViewportVisibility, enforceFocus]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -120,23 +173,46 @@ export function useFocusGuard(
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        focusStateRef.current.viewportRatio = entry?.intersectionRatio ?? 0;
+        const video = videoRef.current;
+
+        if (!video) {
+          return;
+        }
+
+        const ratio = entry?.intersectionRatio ?? measureVideoViewportRatio();
+        updateViewportRatio(ratio);
+
+        if (ratio < visibilityThreshold && !video.paused) {
+          pauseForReason("viewport_hidden");
+          return;
+        }
+
         enforceFocus();
       },
       {
-        threshold: [0, 0.25, 0.5, 0.75, visibilityThreshold, 1]
+        threshold: [0, 0.25, 0.5, 0.75, 0.9, 1]
       }
     );
 
     observer.observe(video);
+    checkViewportVisibility();
 
     return () => {
       observer.disconnect();
     };
-  }, [enforceFocus, videoRef, visibilityThreshold]);
+  }, [
+    checkViewportVisibility,
+    enforceFocus,
+    measureVideoViewportRatio,
+    pauseForReason,
+    updateViewportRatio,
+    videoRef,
+    visibilityThreshold
+  ]);
 
   return {
     handlePlaybackStarted,
-    pauseMessage
+    pauseMessage,
+    viewportRatio
   };
 }

@@ -22,7 +22,8 @@ export function SecureVideoPlayer() {
   const [sessionState, setSessionState] = useState<SessionState>("loading");
   const [sessionMessage, setSessionMessage] = useState("Creating backend session...");
   const [playerState, setPlayerState] = useState<PlayerState>("loading");
-  const { handlePlaybackStarted, pauseMessage } = useFocusGuard(videoRef);
+  const { handlePlaybackStarted, pauseMessage, viewportRatio } =
+    useFocusGuard(videoRef);
 
   useEffect(() => {
     if (videoRef.current && videoRef.current.readyState >= 2) {
@@ -126,6 +127,9 @@ export function SecureVideoPlayer() {
         </span>
         <span className="status-pill status-placeholder">
           Focus guard active
+        </span>
+        <span className="status-pill">
+          Video visibility: {Math.round(viewportRatio * 100)}%
         </span>
       </div>
     </section>
