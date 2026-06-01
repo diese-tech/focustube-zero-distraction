@@ -20,11 +20,11 @@ Build a prototype application that loads a video, sanitizes the user interface, 
 | Secure video player interface | Controlled HTML video interface, no unmonitored iframe embed | Planned |
 | Page Visibility API | Pause when document is hidden or window is minimized | Planned |
 | Intersection Observer API | Pause when video visibility falls below 90% of viewport | Planned |
-| Backend | Node.js API for sessions and telemetry | Planned |
-| Video metadata sessions | Session wrapper API for video metadata and lifecycle | Planned |
+| Backend | Node.js API for sessions and telemetry | In progress |
+| Video metadata sessions | Session wrapper API for video metadata and lifecycle | Implemented |
 | Custom token bucket limiter | In-memory implementation without third-party rate limit middleware | Implemented |
 | Burst traffic handling | Smooth token refill strategy with per-key buckets | Implemented |
-| Frontend telemetry | Engagement and distraction events queued client-side | Planned |
+| Frontend telemetry | Backend ingestion implemented; client-side queue planned | In progress |
 | 5-second telemetry batching | Batch dispatch interval with unload/visibility flush | Planned |
 | sendBeacon / compressed JSON | Use sendBeacon where appropriate with fetch fallback | Planned |
 | Public GitHub repository | This repository | Done |
@@ -107,19 +107,38 @@ type SessionResponse = {
 Rate limiting:
 
 - `POST /api/sessions` is protected by a custom in-memory token bucket limiter.
+- `POST /api/telemetry` is protected by the same custom limiter implementation.
 - Demo configuration allows a burst of 5 requests and refills 1 token per second.
 - Limited requests return `429` with a JSON error envelope and rate limit headers.
 
 Telemetry event shape:
 
 ```ts
-type TelemetryEvent = {
+type TelemetryEventType =
+  | 'play'
+  | 'pause'
+  | 'focus_lost'
+  | 'focus_restored'
+  | 'visibility_below_threshold'
+  | 'visibility_restored'
+  | 'heartbeat';
+
+type TelemetryBatchRequest = {
   sessionId: string;
-  eventType: 'play' | 'pause' | 'focus_lost' | 'focus_restored' | 'visibility_below_threshold' | 'visibility_restored' | 'heartbeat';
-  occurredAt: string;
-  metadata?: Record<string, unknown>;
+  events: Array<{
+    eventType: TelemetryEventType;
+    occurredAt: string;
+    metadata?: Record<string, unknown>;
+  }>;
+};
+
+type TelemetryAcceptedResponse = {
+  accepted: true;
+  acceptedCount: number;
 };
 ```
+
+Telemetry batches are accepted only for active backend sessions. The backend caps each batch at 50 events and stores accepted events in memory for challenge-version debugging.
 
 ## Local Development
 

@@ -5,6 +5,10 @@ import type {
   CreateSessionRequest,
   HealthResponse,
   SessionResponse,
+  TelemetryAcceptedResponse,
+  TelemetryBatchRequest,
+  TelemetryEvent,
+  TelemetryEventType,
   VideoSession
 } from "@focustube/shared";
 import { createTokenBucketRateLimiter } from "./middleware/rateLimit.js";
@@ -14,6 +18,15 @@ const port = Number(process.env.PORT ?? 4000);
 const sessionDurationMs = 30 * 60 * 1000;
 const sessions = new Map<string, VideoSession>();
 const sessionWriteRateLimit = createTokenBucketRateLimiter();
+const telemetryWriteRateLimit = createTokenBucketRateLimiter();
+const telemetryBatchMaxSize = 50;
+const telemetryStoreMaxSize = 500;
+const acceptedTelemetryEvents: StoredTelemetryEvent[] = [];
+
+type StoredTelemetryEvent = TelemetryEvent & {
+  sessionId: string;
+  acceptedAt: string;
+};
 
 const demoVideos = {
   "demo-video-1": {
@@ -58,6 +71,15 @@ function sessionNotFoundResponse(): ApiErrorResponse {
   };
 }
 
+function invalidTelemetryResponse(): ApiErrorResponse {
+  return {
+    error: {
+      code: "INVALID_TELEMETRY",
+      message: "Invalid telemetry payload."
+    }
+  };
+}
+
 function isCreateSessionRequest(body: unknown): body is CreateSessionRequest {
   if (!body || typeof body !== "object") {
     return false;
@@ -75,6 +97,90 @@ function isExpired(session: VideoSession, now = Date.now()) {
   return Date.parse(session.expiresAt) <= now;
 }
 
+const telemetryEventTypes = new Set<TelemetryEventType>([
+  "play",
+  "pause",
+  "focus_lost",
+  "focus_restored",
+  "visibility_below_threshold",
+  "visibility_restored",
+  "heartbeat"
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isTelemetryEvent(value: unknown): value is TelemetryEvent {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const eventType = value.eventType;
+  const occurredAt = value.occurredAt;
+  const metadata = value.metadata;
+
+  if (typeof eventType !== "string" || !telemetryEventTypes.has(eventType as TelemetryEventType)) {
+    return false;
+  }
+
+  if (typeof occurredAt !== "string" || Number.isNaN(Date.parse(occurredAt))) {
+    return false;
+  }
+
+  return metadata === undefined || isRecord(metadata);
+}
+
+function isTelemetryBatchRequest(body: unknown): body is TelemetryBatchRequest {
+  if (!isRecord(body)) {
+    return false;
+  }
+
+  const { sessionId, events } = body;
+  return (
+    typeof sessionId === "string" &&
+    sessionId.trim().length > 0 &&
+    Array.isArray(events) &&
+    events.length > 0 &&
+    events.length <= telemetryBatchMaxSize &&
+    events.every(isTelemetryEvent)
+  );
+}
+
+function findActiveSession(sessionId: string) {
+  const session = sessions.get(sessionId);
+
+  if (!session) {
+    return undefined;
+  }
+
+  if (isExpired(session)) {
+    sessions.delete(session.sessionId);
+    return undefined;
+  }
+
+  return session;
+}
+
+function storeTelemetryEvents(sessionId: string, events: TelemetryEvent[]) {
+  const acceptedAt = new Date().toISOString();
+
+  acceptedTelemetryEvents.push(
+    ...events.map((event) => ({
+      ...event,
+      sessionId,
+      acceptedAt
+    }))
+  );
+
+  if (acceptedTelemetryEvents.length > telemetryStoreMaxSize) {
+    acceptedTelemetryEvents.splice(
+      0,
+      acceptedTelemetryEvents.length - telemetryStoreMaxSize
+    );
+  }
+}
+
 app.get("/api/health", (_request, response) => {
   const body: HealthResponse = {
     status: "ok",
@@ -83,6 +189,30 @@ app.get("/api/health", (_request, response) => {
   };
 
   response.json(body);
+});
+
+app.post("/api/telemetry", telemetryWriteRateLimit, (request, response) => {
+  if (!isTelemetryBatchRequest(request.body)) {
+    response.status(400).json(invalidTelemetryResponse());
+    return;
+  }
+
+  const sessionId = request.body.sessionId.trim();
+  const session = findActiveSession(sessionId);
+
+  if (!session) {
+    response.status(400).json(sessionNotFoundResponse());
+    return;
+  }
+
+  storeTelemetryEvents(session.sessionId, request.body.events);
+
+  const body: TelemetryAcceptedResponse = {
+    accepted: true,
+    acceptedCount: request.body.events.length
+  };
+
+  response.status(202).json(body);
 });
 
 app.post("/api/sessions", sessionWriteRateLimit, (request, response) => {

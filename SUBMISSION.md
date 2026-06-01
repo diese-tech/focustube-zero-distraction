@@ -24,7 +24,7 @@ The challenge version is intentionally narrow: prove the focus guard, session wr
 | Backend API | Use a Node.js service for sessions and telemetry ingestion. |
 | Metadata session wrapper | Create sessions through a backend wrapper endpoint. |
 | Custom token bucket limiter | Implemented custom in-memory token bucket logic without third-party rate limiting middleware. |
-| Telemetry events | Capture engagement and distraction events from the frontend. |
+| Telemetry events | Backend ingestion implemented; frontend event capture remains planned. |
 | 5-second telemetry batching | Queue events and send batches roughly every 5 seconds. |
 | sendBeacon or compressed payloads | Use `navigator.sendBeacon` for unload flushes, with `fetch` fallback. |
 

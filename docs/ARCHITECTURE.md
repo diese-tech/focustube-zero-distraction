@@ -35,7 +35,7 @@ Node.js Backend
 | Telemetry client | `src/lib/telemetry.ts` | API calls and payload formatting. |
 | Backend entry | `apps/api/src/index.ts` | HTTP server setup and route registration. |
 | Sessions route | `apps/api/src/index.ts` | Create metadata-backed video sessions. |
-| Telemetry route | `server/src/routes/telemetry.ts` | Receive engagement and distraction events. |
+| Telemetry route | `apps/api/src/index.ts` | Receive validated engagement and distraction event batches. |
 | Token bucket | `apps/api/src/rate-limit/TokenBucket.ts` | Custom rate limiter state and refill logic. |
 | Rate middleware | `apps/api/src/middleware/rateLimit.ts` | Apply token bucket limits to API routes. |
 | Shared types | `src/types/telemetry.ts` or `shared/types.ts` | Typed telemetry contracts shared across boundaries. |
@@ -102,7 +102,9 @@ POST compressed JSON batch or regular JSON batch
 Backend validates and accepts telemetry
 ```
 
-On refresh or close, the frontend should attempt to flush pending events using `navigator.sendBeacon`. If `sendBeacon` is unavailable or inappropriate for the payload, normal `fetch` remains the fallback for active-page flushes.
+The backend now accepts validated telemetry batches at `POST /api/telemetry`, rejects unknown sessions, caps each batch at 50 events, and stores accepted events in memory for challenge-version debugging. Frontend batching, compression, and `navigator.sendBeacon` transport remain planned.
+
+On refresh or close, the frontend should later attempt to flush pending events using `navigator.sendBeacon`. If `sendBeacon` is unavailable or inappropriate for the payload, normal `fetch` remains the fallback for active-page flushes.
 
 ## Rate Limiter Flow
 
@@ -122,7 +124,7 @@ Refill tokens based on elapsed time
 
 The token bucket should allow short bursts while still limiting sustained high-volume telemetry or session traffic.
 
-Current implementation protects `POST /api/sessions` with a burst capacity of 5 and a refill rate of 1 token per second. `GET /api/health` and `GET /api/sessions/:sessionId` are intentionally unlimited for now.
+Current implementation protects `POST /api/sessions` and `POST /api/telemetry` with separate in-memory buckets, each using a burst capacity of 5 and a refill rate of 1 token per second. `GET /api/health` and `GET /api/sessions/:sessionId` are intentionally unlimited for now.
 
 ## Data Contracts
 
@@ -149,9 +151,8 @@ Current implementation protects `POST /api/sessions` with a burst capacity of 5 
 
 ```json
 {
-  "sessionId": "session_123",
-  "type": "visibility_hidden",
-  "timestamp": "2026-05-31T00:00:05.000Z",
+  "eventType": "visibility_below_threshold",
+  "occurredAt": "2026-05-31T00:00:05.000Z",
   "metadata": {
     "visibilityRatio": 0.82
   }
@@ -165,8 +166,8 @@ Current implementation protects `POST /api/sessions` with a burst capacity of 5 
   "sessionId": "session_123",
   "events": [
     {
-      "type": "playback_started",
-      "timestamp": "2026-05-31T00:00:00.000Z"
+      "eventType": "play",
+      "occurredAt": "2026-05-31T00:00:00.000Z"
     }
   ]
 }

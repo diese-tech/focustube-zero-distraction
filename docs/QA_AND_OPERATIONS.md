@@ -34,8 +34,13 @@ This checklist is for validating the planned challenge implementation before sub
 
 | Test | Steps | Expected result |
 | --- | --- | --- |
-| Batch send cadence | Trigger multiple telemetry events. | Batch is sent about every 5 seconds. |
-| Event shape | Inspect network payload. | Events include `sessionId`, `type`, `timestamp`, and relevant metadata. |
+| Backend accepted batch | Create a session, then `POST /api/telemetry` with a valid `sessionId` and event batch. | Response is `202` with `accepted: true` and `acceptedCount` equal to the event count. |
+| Event shape | Send valid events with `eventType`, `occurredAt`, and optional metadata. | Backend accepts allowed event types with parseable timestamps. |
+| Invalid event type | Send a telemetry event with an unknown `eventType`. | Backend returns `400 INVALID_TELEMETRY`. |
+| Empty batch | Send `events: []`. | Backend returns `400 INVALID_TELEMETRY`. |
+| Unknown session | Send telemetry with a missing or unknown `sessionId`. | Backend returns `400 SESSION_NOT_FOUND`. |
+| Telemetry rate limit | Send rapid repeated `POST /api/telemetry` requests. | Backend eventually returns `429 RATE_LIMITED` with rate limit headers. |
+| Batch send cadence | Trigger multiple telemetry events once the frontend batcher exists. | Batch is sent about every 5 seconds. |
 | Close flush | Refresh or close the page with pending telemetry. | Pending telemetry attempts to send with `navigator.sendBeacon`. |
 | Fetch fallback | Test in a path where `sendBeacon` is unavailable or not used. | Telemetry still sends with `fetch` during normal page activity. |
 | Backend validation | Send malformed telemetry manually. | Backend returns a client error and does not accept invalid payloads. |

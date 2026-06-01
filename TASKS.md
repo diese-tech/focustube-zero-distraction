@@ -16,9 +16,10 @@
 ## Backend
 
 - [x] Create session metadata API
-- [ ] Create telemetry ingestion endpoint
+- [x] Create telemetry ingestion endpoint
 - [x] Implement custom token bucket limiter
-- [ ] Add request validation
+- [x] Add session request validation
+- [x] Add telemetry request validation
 
 ## Telemetry
 
@@ -32,9 +33,10 @@
 - [x] README
 - [x] MVP
 - [x] TASKS
-- [ ] DECISIONS
-- [ ] ARCHITECTURE
-- [ ] QA_AND_OPERATIONS
+- [x] DECISIONS
+- [x] ARCHITECTURE
+- [x] QA_AND_OPERATIONS
+- [x] SUBMISSION
 
 ## Deployment
 
