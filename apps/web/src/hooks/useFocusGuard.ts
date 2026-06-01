@@ -7,7 +7,7 @@ type FocusPauseReason = "document_hidden" | "window_blur" | "viewport_hidden";
 const focusPauseMessages: Record<FocusPauseReason, string> = {
   document_hidden: "Playback paused because the tab is no longer visible.",
   window_blur: "Playback paused because the window lost focus.",
-  viewport_hidden: "Playback paused because the player is not mostly visible."
+  viewport_hidden: "Paused: video below 90% viewport visibility"
 };
 
 type FocusState = {
@@ -124,7 +124,7 @@ export function useFocusGuard(
         enforceFocus();
       },
       {
-        threshold: [0, visibilityThreshold, 1]
+        threshold: [0, 0.25, 0.5, 0.75, visibilityThreshold, 1]
       }
     );
 
