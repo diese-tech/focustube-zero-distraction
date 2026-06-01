@@ -21,6 +21,7 @@ This log captures the planned challenge-version architecture. These are implemen
 | Reasoning | The challenge explicitly asks for a token bucket limiter without third-party rate limiting middleware. In-memory state is enough for a single-instance demo. |
 | Benefits | Meets challenge requirements, handles bursts smoothly, keeps the implementation inspectable. |
 | Tradeoffs | State resets on deploy and does not coordinate across multiple instances. |
+| Implementation note | Implemented for `POST /api/sessions` with per-key in-memory buckets, burst capacity 5, and 1 token per second refill. |
 | Alternatives considered | Fixed window limiter, sliding window limiter, Redis-backed limiter, third-party middleware. |
 | Revisit conditions | Revisit before multi-instance deployment or when rate limit state must survive restarts. |
 

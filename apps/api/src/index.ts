@@ -7,11 +7,13 @@ import type {
   SessionResponse,
   VideoSession
 } from "@focustube/shared";
+import { createTokenBucketRateLimiter } from "./middleware/rateLimit.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
 const sessionDurationMs = 30 * 60 * 1000;
 const sessions = new Map<string, VideoSession>();
+const sessionWriteRateLimit = createTokenBucketRateLimiter();
 
 const demoVideos = {
   "demo-video-1": {
@@ -83,7 +85,7 @@ app.get("/api/health", (_request, response) => {
   response.json(body);
 });
 
-app.post("/api/sessions", (request, response) => {
+app.post("/api/sessions", sessionWriteRateLimit, (request, response) => {
   if (!isCreateSessionRequest(request.body)) {
     response.status(400).json(invalidVideoIdResponse());
     return;

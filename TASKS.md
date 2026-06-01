@@ -17,7 +17,7 @@
 
 - [x] Create session metadata API
 - [ ] Create telemetry ingestion endpoint
-- [ ] Implement custom token bucket limiter
+- [x] Implement custom token bucket limiter
 - [ ] Add request validation
 
 ## Telemetry

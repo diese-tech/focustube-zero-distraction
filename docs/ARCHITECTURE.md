@@ -33,11 +33,11 @@ Node.js Backend
 | Focus guard | `src/hooks/useFocusGuard.ts` | Page visibility and viewport visibility enforcement. |
 | Telemetry batcher | `src/hooks/useTelemetryBatcher.ts` | Queue, batch, flush, and fallback behavior. |
 | Telemetry client | `src/lib/telemetry.ts` | API calls and payload formatting. |
-| Backend entry | `server/src/index.ts` | HTTP server setup and route registration. |
-| Sessions route | `server/src/routes/sessions.ts` | Create metadata-backed video sessions. |
+| Backend entry | `apps/api/src/index.ts` | HTTP server setup and route registration. |
+| Sessions route | `apps/api/src/index.ts` | Create metadata-backed video sessions. |
 | Telemetry route | `server/src/routes/telemetry.ts` | Receive engagement and distraction events. |
-| Token bucket | `server/src/rate-limit/TokenBucket.ts` | Custom rate limiter state and refill logic. |
-| Rate middleware | `server/src/middleware/rateLimit.ts` | Apply token bucket limits to API routes. |
+| Token bucket | `apps/api/src/rate-limit/TokenBucket.ts` | Custom rate limiter state and refill logic. |
+| Rate middleware | `apps/api/src/middleware/rateLimit.ts` | Apply token bucket limits to API routes. |
 | Shared types | `src/types/telemetry.ts` or `shared/types.ts` | Typed telemetry contracts shared across boundaries. |
 
 ## Frontend Responsibilities
@@ -121,6 +121,8 @@ Refill tokens based on elapsed time
 ```
 
 The token bucket should allow short bursts while still limiting sustained high-volume telemetry or session traffic.
+
+Current implementation protects `POST /api/sessions` with a burst capacity of 5 and a refill rate of 1 token per second. `GET /api/health` and `GET /api/sessions/:sessionId` are intentionally unlimited for now.
 
 ## Data Contracts
 

@@ -22,8 +22,8 @@ Build a prototype application that loads a video, sanitizes the user interface, 
 | Intersection Observer API | Pause when video visibility falls below 90% of viewport | Planned |
 | Backend | Node.js API for sessions and telemetry | Planned |
 | Video metadata sessions | Session wrapper API for video metadata and lifecycle | Planned |
-| Custom token bucket limiter | In-memory implementation without third-party rate limit middleware | Planned |
-| Burst traffic handling | Token refill strategy with per-key buckets | Planned |
+| Custom token bucket limiter | In-memory implementation without third-party rate limit middleware | Implemented |
+| Burst traffic handling | Smooth token refill strategy with per-key buckets | Implemented |
 | Frontend telemetry | Engagement and distraction events queued client-side | Planned |
 | 5-second telemetry batching | Batch dispatch interval with unload/visibility flush | Planned |
 | sendBeacon / compressed JSON | Use sendBeacon where appropriate with fetch fallback | Planned |
@@ -103,6 +103,12 @@ type SessionResponse = {
   session: VideoSession;
 };
 ```
+
+Rate limiting:
+
+- `POST /api/sessions` is protected by a custom in-memory token bucket limiter.
+- Demo configuration allows a burst of 5 requests and refills 1 token per second.
+- Limited requests return `429` with a JSON error envelope and rate limit headers.
 
 Telemetry event shape:
 

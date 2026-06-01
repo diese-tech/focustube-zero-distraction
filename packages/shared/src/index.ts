@@ -23,7 +23,7 @@ export type SessionResponse = {
 
 export type ApiErrorResponse = {
   error: {
-    code: "INVALID_VIDEO_ID" | "SESSION_NOT_FOUND";
+    code: "INVALID_VIDEO_ID" | "RATE_LIMITED" | "SESSION_NOT_FOUND";
     message: string;
   };
 };

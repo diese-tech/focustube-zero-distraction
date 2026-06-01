@@ -23,7 +23,7 @@ The challenge version is intentionally narrow: prove the focus guard, session wr
 | Intersection Observer API | Pause playback when video visibility drops below 90%. |
 | Backend API | Use a Node.js service for sessions and telemetry ingestion. |
 | Metadata session wrapper | Create sessions through a backend wrapper endpoint. |
-| Custom token bucket limiter | Implement in-memory token bucket logic without third-party rate limiting middleware. |
+| Custom token bucket limiter | Implemented custom in-memory token bucket logic without third-party rate limiting middleware. |
 | Telemetry events | Capture engagement and distraction events from the frontend. |
 | 5-second telemetry batching | Queue events and send batches roughly every 5 seconds. |
 | sendBeacon or compressed payloads | Use `navigator.sendBeacon` for unload flushes, with `fetch` fallback. |

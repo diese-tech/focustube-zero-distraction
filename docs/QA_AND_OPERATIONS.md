@@ -44,10 +44,11 @@ This checklist is for validating the planned challenge implementation before sub
 
 | Test | Steps | Expected result |
 | --- | --- | --- |
-| Burst handling | Send a short burst of telemetry requests. | Initial burst is accepted within bucket capacity. |
-| Limit enforcement | Continue sending requests beyond capacity. | Token bucket eventually returns `429 Too Many Requests`. |
-| Refill behavior | Wait for the refill window, then send again. | Requests are accepted again after tokens refill. |
-| Route coverage | Test session and telemetry endpoints. | Protected routes use the custom limiter consistently. |
+| Session burst handling | Send 5 rapid `POST /api/sessions` requests with valid `videoId`. | Initial burst is accepted within bucket capacity. |
+| Limit enforcement | Continue rapid `POST /api/sessions` requests beyond capacity. | Token bucket returns `429 Too Many Requests` with `RATE_LIMITED`. |
+| Rate limit headers | Inspect the `429` response. | Response includes `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `Retry-After`. |
+| Refill behavior | Wait 1-2 seconds after a `429`, then send another valid `POST /api/sessions`. | Request is accepted again after token refill. |
+| Route coverage | Test `GET /api/health`, `GET /api/sessions/:sessionId`, and `POST /api/sessions`. | Only `POST /api/sessions` is limited in the current implementation. |
 | No middleware shortcut | Inspect implementation. | Limiter is custom code, not third-party rate limiting middleware. |
 
 ## Deployment Smoke Tests
