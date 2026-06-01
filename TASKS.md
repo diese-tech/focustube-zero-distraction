@@ -9,9 +9,9 @@
 ## Frontend
 
 - [x] Build secure video player
-- [ ] Implement Page Visibility API monitoring
-- [ ] Implement Intersection Observer monitoring
-- [ ] Add pause reason indicators
+- [x] Implement Page Visibility API monitoring
+- [x] Implement Intersection Observer monitoring
+- [x] Add pause reason indicators
 
 ## Backend
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useFocusGuard } from "../hooks/useFocusGuard";
 import { createDemoSession, type VideoSession } from "../lib/api";
 
 const fallbackSession: VideoSession = {
@@ -21,6 +22,7 @@ export function SecureVideoPlayer() {
   const [sessionState, setSessionState] = useState<SessionState>("loading");
   const [sessionMessage, setSessionMessage] = useState("Creating backend session...");
   const [playerState, setPlayerState] = useState<PlayerState>("loading");
+  const { handlePlaybackStarted, pauseMessage } = useFocusGuard(videoRef);
 
   useEffect(() => {
     if (videoRef.current && videoRef.current.readyState >= 2) {
@@ -64,7 +66,10 @@ export function SecureVideoPlayer() {
           src="/demo/focustube-demo.mp4"
           onLoadedMetadata={() => setPlayerState("ready")}
           onCanPlay={() => setPlayerState("ready")}
-          onPlay={() => setPlayerState("playing")}
+          onPlay={() => {
+            setPlayerState("playing");
+            handlePlaybackStarted();
+          }}
           onPause={() => setPlayerState("paused")}
           onEnded={() => setPlayerState("ended")}
           onError={() => setPlayerState("unavailable")}
@@ -77,6 +82,10 @@ export function SecureVideoPlayer() {
         <p className="alert alert-error">
           Demo video unavailable. Expected asset: /demo/focustube-demo.mp4.
         </p>
+      ) : null}
+
+      {pauseMessage ? (
+        <p className="alert alert-warning">{pauseMessage}</p>
       ) : null}
 
       <div className="player-meta">
@@ -116,7 +125,7 @@ export function SecureVideoPlayer() {
           Player: {playerState}
         </span>
         <span className="status-pill status-placeholder">
-          Focus monitoring not active yet
+          Focus guard active
         </span>
       </div>
     </section>

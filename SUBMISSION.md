@@ -19,8 +19,8 @@ The challenge version is intentionally narrow: prove the focus guard, session wr
 | --- | --- |
 | Next.js frontend | Use a TypeScript Next.js app for the video experience. |
 | Secure video player interface | Implemented controlled HTML video shell with session-backed metadata. |
-| Page Visibility API | Pause playback when the document becomes hidden. |
-| Intersection Observer API | Pause playback when video visibility drops below 90%. |
+| Page Visibility API | Implemented pause behavior when the document becomes hidden or window loses focus. |
+| Intersection Observer API | Implemented pause behavior when video visibility drops below 90%. |
 | Backend API | Use a Node.js service for sessions and telemetry ingestion. |
 | Metadata session wrapper | Create sessions through a backend wrapper endpoint. |
 | Custom token bucket limiter | Implemented custom in-memory token bucket logic without third-party rate limiting middleware. |
