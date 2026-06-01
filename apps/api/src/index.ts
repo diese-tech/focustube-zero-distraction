@@ -35,6 +35,22 @@ const demoVideos = {
   }
 } as const;
 
+app.use((request, response, next) => {
+  if (request.headers.origin === "http://localhost:3000") {
+    response.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+    response.setHeader("Vary", "Origin");
+    response.setHeader("Access-Control-Allow-Headers", "content-type");
+    response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  }
+
+  if (request.method === "OPTIONS") {
+    response.sendStatus(204);
+    return;
+  }
+
+  next();
+});
+
 app.use(express.json());
 
 const jsonParseErrorHandler: ErrorRequestHandler = (

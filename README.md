@@ -17,7 +17,7 @@ Build a prototype application that loads a video, sanitizes the user interface, 
 | Requirement | Planned Implementation | Status |
 |---|---|---|
 | Next.js frontend | App Router + TypeScript | Planned |
-| Secure video player interface | Controlled HTML video interface, no unmonitored iframe embed | Planned |
+| Secure video player interface | Controlled HTML video interface, no unmonitored iframe embed | Implemented |
 | Page Visibility API | Pause when document is hidden or window is minimized | Planned |
 | Intersection Observer API | Pause when video visibility falls below 90% of viewport | Planned |
 | Backend | Node.js API for sessions and telemetry | In progress |

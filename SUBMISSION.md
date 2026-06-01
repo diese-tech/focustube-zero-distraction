@@ -18,7 +18,7 @@ The challenge version is intentionally narrow: prove the focus guard, session wr
 | Requirement | Planned approach |
 | --- | --- |
 | Next.js frontend | Use a TypeScript Next.js app for the video experience. |
-| Secure video player interface | Build a focused player component with session-backed metadata. |
+| Secure video player interface | Implemented controlled HTML video shell with session-backed metadata. |
 | Page Visibility API | Pause playback when the document becomes hidden. |
 | Intersection Observer API | Pause playback when video visibility drops below 90%. |
 | Backend API | Use a Node.js service for sessions and telemetry ingestion. |

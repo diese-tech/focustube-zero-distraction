@@ -8,7 +8,7 @@
 
 ## Frontend
 
-- [ ] Build secure video player
+- [x] Build secure video player
 - [ ] Implement Page Visibility API monitoring
 - [ ] Implement Intersection Observer monitoring
 - [ ] Add pause reason indicators

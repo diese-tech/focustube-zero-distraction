@@ -19,11 +19,11 @@ body {
 
 main {
   min-height: 100vh;
-  padding: 48px 24px;
+  padding: 40px 24px;
 }
 
 .shell {
-  width: min(920px, 100%);
+  width: min(1040px, 100%);
   margin: 0 auto;
 }
 
@@ -51,27 +51,115 @@ h1 {
   line-height: 1.6;
 }
 
-.status-grid {
+.player-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.video-frame {
+  overflow: hidden;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #0f172a;
+}
+
+.secure-video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #020617;
+}
+
+.player-meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
 }
 
-.status-card {
+.player-meta article {
   border: 1px solid #dbe3ef;
   border-radius: 8px;
   padding: 18px;
   background: #ffffff;
 }
 
-.status-card h2 {
+.player-meta h2 {
   margin: 0 0 8px;
   color: #0f172a;
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 
-.status-card p {
+.meta-label {
+  margin: 0 0 8px;
+  color: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+dl {
+  display: grid;
+  gap: 10px;
   margin: 0;
+}
+
+dt {
   color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+dd {
+  margin: 2px 0 0;
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.status-pill {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.status-playing,
+.status-ready {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.status-unavailable {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.status-placeholder {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.alert {
+  margin: 0;
+  border-radius: 8px;
+  padding: 12px 14px;
   line-height: 1.5;
+}
+
+.alert-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
 }
