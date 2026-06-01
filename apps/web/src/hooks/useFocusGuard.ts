@@ -16,6 +16,41 @@ type FocusState = {
   viewportRatio: number;
 };
 
+const clampRatio = (ratio: number) => Math.max(0, Math.min(1, ratio));
+
+function measureVideoViewportRatio(video: HTMLVideoElement) {
+  const rect = video.getBoundingClientRect();
+  const videoArea = rect.width * rect.height;
+
+  if (videoArea <= 0) {
+    return 0;
+  }
+
+  const viewportLeft = window.visualViewport?.offsetLeft ?? 0;
+  const viewportTop = window.visualViewport?.offsetTop ?? 0;
+  const viewportWidth =
+    window.visualViewport?.width ??
+    document.documentElement.clientWidth ??
+    window.innerWidth;
+  const viewportHeight =
+    window.visualViewport?.height ??
+    document.documentElement.clientHeight ??
+    window.innerHeight;
+  const viewportRight = viewportLeft + viewportWidth;
+  const viewportBottom = viewportTop + viewportHeight;
+
+  const visibleWidth = Math.max(
+    0,
+    Math.min(rect.right, viewportRight) - Math.max(rect.left, viewportLeft)
+  );
+  const visibleHeight = Math.max(
+    0,
+    Math.min(rect.bottom, viewportBottom) - Math.max(rect.top, viewportTop)
+  );
+
+  return clampRatio((visibleWidth * visibleHeight) / videoArea);
+}
+
 export function useFocusGuard(
   videoRef: RefObject<HTMLVideoElement | null>,
   visibilityThreshold = 0.9
@@ -28,39 +63,14 @@ export function useFocusGuard(
     viewportRatio: 1
   });
   const lastPauseReasonRef = useRef<FocusPauseReason | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   const updateViewportRatio = useCallback((ratio: number) => {
-    const nextRatio = Math.max(0, Math.min(1, ratio));
+    const nextRatio = clampRatio(ratio);
 
     focusStateRef.current.viewportRatio = nextRatio;
     setViewportRatio(nextRatio);
   }, []);
-
-  const measureVideoViewportRatio = useCallback(() => {
-    const video = videoRef.current;
-
-    if (!video) {
-      return 0;
-    }
-
-    const rect = video.getBoundingClientRect();
-    const videoArea = rect.width * rect.height;
-
-    if (videoArea <= 0) {
-      return 0;
-    }
-
-    const visibleWidth = Math.max(
-      0,
-      Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0)
-    );
-    const visibleHeight = Math.max(
-      0,
-      Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0)
-    );
-
-    return (visibleWidth * visibleHeight) / videoArea;
-  }, [videoRef]);
 
   const getBlockingReason = useCallback((): FocusPauseReason | null => {
     const focusState = focusStateRef.current;
@@ -98,14 +108,21 @@ export function useFocusGuard(
     [videoRef]
   );
 
-  const checkViewportVisibility = useCallback(() => {
-    const ratio = measureVideoViewportRatio();
+  const enforceViewportVisibility = useCallback(() => {
+    const video = videoRef.current;
+
+    if (!video) {
+      updateViewportRatio(0);
+      return;
+    }
+
+    const ratio = measureVideoViewportRatio(video);
     updateViewportRatio(ratio);
 
-    if (ratio < visibilityThreshold) {
+    if (ratio < visibilityThreshold && !video.paused && !video.ended) {
       pauseForReason("viewport_hidden");
     }
-  }, [measureVideoViewportRatio, pauseForReason, updateViewportRatio, visibilityThreshold]);
+  }, [pauseForReason, updateViewportRatio, videoRef, visibilityThreshold]);
 
   const enforceFocus = useCallback(() => {
     const reason = getBlockingReason();
@@ -115,8 +132,36 @@ export function useFocusGuard(
     }
   }, [getBlockingReason, pauseForReason]);
 
+  const stopVisibilityWatch = useCallback(() => {
+    if (animationFrameRef.current === null) {
+      return;
+    }
+
+    window.cancelAnimationFrame(animationFrameRef.current);
+    animationFrameRef.current = null;
+  }, []);
+
+  const startVisibilityWatch = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      return;
+    }
+
+    const watch = () => {
+      animationFrameRef.current = null;
+      enforceViewportVisibility();
+
+      const video = videoRef.current;
+
+      if (video && !video.paused && !video.ended) {
+        animationFrameRef.current = window.requestAnimationFrame(watch);
+      }
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(watch);
+  }, [enforceViewportVisibility, videoRef]);
+
   const handlePlaybackStarted = useCallback(() => {
-    checkViewportVisibility();
+    enforceViewportVisibility();
 
     const reason = getBlockingReason();
 
@@ -127,7 +172,13 @@ export function useFocusGuard(
 
     lastPauseReasonRef.current = null;
     setPauseMessage(null);
-  }, [checkViewportVisibility, getBlockingReason, pauseForReason]);
+    startVisibilityWatch();
+  }, [
+    enforceViewportVisibility,
+    getBlockingReason,
+    pauseForReason,
+    startVisibilityWatch
+  ]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -146,7 +197,7 @@ export function useFocusGuard(
     };
 
     const handleViewportChange = () => {
-      checkViewportVisibility();
+      enforceViewportVisibility();
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -154,6 +205,10 @@ export function useFocusGuard(
     window.addEventListener("blur", handleWindowBlur);
     window.addEventListener("scroll", handleViewportChange, { passive: true });
     window.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("scroll", handleViewportChange, {
+      passive: true
+    });
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -161,8 +216,16 @@ export function useFocusGuard(
       window.removeEventListener("blur", handleWindowBlur);
       window.removeEventListener("scroll", handleViewportChange);
       window.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener(
+        "scroll",
+        handleViewportChange
+      );
+      window.visualViewport?.removeEventListener(
+        "resize",
+        handleViewportChange
+      );
     };
-  }, [checkViewportVisibility, enforceFocus]);
+  }, [enforceFocus, enforceViewportVisibility]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -179,7 +242,8 @@ export function useFocusGuard(
           return;
         }
 
-        const ratio = entry?.intersectionRatio ?? measureVideoViewportRatio();
+        const ratio =
+          entry?.intersectionRatio ?? measureVideoViewportRatio(video);
         updateViewportRatio(ratio);
 
         if (ratio < visibilityThreshold && !video.paused) {
@@ -195,16 +259,26 @@ export function useFocusGuard(
     );
 
     observer.observe(video);
-    checkViewportVisibility();
+    enforceViewportVisibility();
+
+    const handlePlaybackStopped = () => {
+      stopVisibilityWatch();
+    };
+
+    video.addEventListener("pause", handlePlaybackStopped);
+    video.addEventListener("ended", handlePlaybackStopped);
 
     return () => {
       observer.disconnect();
+      video.removeEventListener("pause", handlePlaybackStopped);
+      video.removeEventListener("ended", handlePlaybackStopped);
+      stopVisibilityWatch();
     };
   }, [
-    checkViewportVisibility,
     enforceFocus,
-    measureVideoViewportRatio,
+    enforceViewportVisibility,
     pauseForReason,
+    stopVisibilityWatch,
     updateViewportRatio,
     videoRef,
     visibilityThreshold
